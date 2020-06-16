@@ -6,9 +6,9 @@ import { Button, ButtonToolbar, FormGroup, Schema } from 'rsuite';
 import SendMessageButton from './views/send-message-button';
 
 import { plug } from 'code-plug';
-import withSocket from '../../src/wrappers/with-socket';
 import { Panel } from '../../src/components';
 import { WidgetForm as Widgets } from '../../src/components';
+import useSocket from '../../src/hooks/socket';
 
 const { WidgetForm, Content, Footer } = Widgets;
 
@@ -18,9 +18,10 @@ import SendForm from './views/send-form';
 
 
 
-const SendMessageWidget = ({ sendMessage, stats }) => {
+const SendMessageWidget = ({ stats }) => {
   const [formValue, setFormValue] = useState({ message: '' });
   const canSend = !_.isEmpty(formValue.chatId) && !_.isEmpty(formValue.botNode);
+  const { sendMessage } = useSocket();
 
   return (
     <Panel title="Send Message" className="widget-send-message">
@@ -29,6 +30,10 @@ const SendMessageWidget = ({ sendMessage, stats }) => {
           <SendForm
             value={formValue}
             onChange={value => setFormValue(value)}
+            onSubmit={() => {
+              sendMessage('message.send', formValue);
+              setFormValue({ ...formValue, message: '' });
+            }}
           />
         </Content>
         <Footer>
@@ -56,7 +61,7 @@ const SendMessageWidget = ({ sendMessage, stats }) => {
   );
 }
 
-plug('widgets', withSocket(SendMessageWidget), { x: 0, y: 0, w: 2, h: 6, isResizable: true, id: 1 });
+plug('widgets', SendMessageWidget, { x: 0, y: 0, w: 2, h: 6, isResizable: true, id: 1 });
 
 // register button in the user modal to redirect to survey lists
 plug(

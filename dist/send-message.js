@@ -1,8 +1,8 @@
 /*!
  * Name: send-message
  * Id: send-message
- * Version: 1.0.2
- * Description: Send message directly to a user using the chatbot. A plugin for red-bot.io
+ * Version: 1.0.0
+ * Description: Send message directly to a user using the chatbot. A plugin for red-bot .io
  * Author: Guido Bellomo (https://github.com/guidone)
  * Repository: https://github.com/guidone/red-bot-send-message
  */

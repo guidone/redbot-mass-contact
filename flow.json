@@ -1,0 +1,99 @@
+[
+  {
+      "id": "64c51dc3.e7bc74",
+      "type": "subflow",
+      "name": "Contact user",
+      "info": "Send a direct message to a chatbot user from **Mission Control**.\n\nConnect the output to the supported sender nodes (`Telegram Sender`, `Facebook Sender`, etc)\n\nThis option is available:\n\n* a widget in the dashboard\n* in the user modal in the [users list](/mc/users)\n* in the user records page (if plugins are installed, like [surveys](/mc/surveys), [transactions](/mc/transactions), etc)\n* \n\nVersion: _1.0.4_\n\nUrl: [GitHub](https://github.com/guidone/red-bot-send-message)",
+      "category": "RedBot Flows",
+      "in": [],
+      "out": [
+          {
+              "x": 1080,
+              "y": 120,
+              "wires": [
+                  {
+                      "id": "11bdc38.d0cd63d",
+                      "port": 0
+                  }
+              ]
+          }
+      ],
+      "env": [],
+      "color": "#ff6633",
+      "outputLabels": [
+          "To Senders"
+      ],
+      "icon": "node-red-contrib-chatbot/chatbot-message.png"
+  },
+  {
+      "id": "b3b9183d.b6d918",
+      "type": "mc-input",
+      "z": "64c51dc3.e7bc74",
+      "name": "",
+      "topic": "message.send",
+      "x": 190,
+      "y": 120,
+      "wires": [
+          [
+              "25c2d074.4e58b"
+          ]
+      ]
+  },
+  {
+      "id": "11bdc38.d0cd63d",
+      "type": "chatbot-message",
+      "z": "64c51dc3.e7bc74",
+      "name": "From payload",
+      "message": [],
+      "x": 920,
+      "y": 120,
+      "wires": [
+          []
+      ]
+  },
+  {
+      "id": "d1d71469.e9df28",
+      "type": "comment",
+      "z": "64c51dc3.e7bc74",
+      "name": "Trigger the start of conversation from control panel",
+      "info": "",
+      "x": 270,
+      "y": 60,
+      "wires": []
+  },
+  {
+      "id": "25c2d074.4e58b",
+      "type": "function",
+      "z": "64c51dc3.e7bc74",
+      "name": "Payload for conversation",
+      "func": "const instantMessage = msg.payload;\n\nmsg.chatId = instantMessage.chatId;\nmsg.payload = instantMessage.message;\nmsg.botNode = instantMessage.botNode;\n\nreturn msg;",
+      "outputs": 1,
+      "noerr": 0,
+      "x": 490,
+      "y": 120,
+      "wires": [
+          [
+              "4dc66a6.082aa94"
+          ]
+      ]
+  },
+  {
+      "id": "4dc66a6.082aa94",
+      "type": "chatbot-conversation",
+      "z": "64c51dc3.e7bc74",
+      "name": "",
+      "botDevelopment": "",
+      "botProduction": "",
+      "chatId": "",
+      "userId": "",
+      "transport": "",
+      "store": "",
+      "x": 730,
+      "y": 120,
+      "wires": [
+          [
+              "11bdc38.d0cd63d"
+          ]
+      ]
+  }
+]

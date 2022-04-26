@@ -3,8 +3,8 @@ import { Button, Notification, Schema } from 'rsuite';
 import _ from 'lodash';
 
 import { Modal } from '../../../src/components';
-import useSocket from '../../../src/hooks/socket';
-import useGlobals from '../../../src/hooks/globals';
+import { useNodeRedSocket } from '../../../src/hooks/socket';
+import useMCContext from '../../../src/hooks/mc-context';
 import name from '../../../src/helpers/user/readable-name';
 
 const { useModal } = Modal;
@@ -24,14 +24,13 @@ const messageModel = Schema.Model({
 
 
 const SendMessageButton = ({ user, appearance = 'ghost', transport }) => {
-  const { sendMessage } = useSocket();
-  const { activeChatbots } = useGlobals();
+  const { sendMessage } = useNodeRedSocket();
+  const { state: { activeChatbots } } = useMCContext();
   const { open, close, validate, error, disable, openWithModel, openWith } = useModal({
     view: SendMessageForm,
     title: 'Send message',
     labelSubmit: 'Send message',
-    size: 'sm',
-    //enableSummit: isValidMessage
+    size: 'sm'
   });
 
   let botNode;
@@ -56,8 +55,6 @@ const SendMessageButton = ({ user, appearance = 'ghost', transport }) => {
       appearance={appearance}
       onClick={async () => {
         let msg = { recipient: user, botNode, chatId, message: '' };
-
-        //msg = await openWithModel(msg, messageModel);
         msg = await openWith(msg, isValidMessage);
         if (msg) {
           sendMessage('message.send', msg);

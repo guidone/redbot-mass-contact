@@ -1,7 +1,7 @@
 import React from 'react';
 import { FormControl, Form, FormGroup, ControlLabel, FlexboxGrid, HelpBlock } from 'rsuite';
 
-import useGlobals from '../../../src/hooks/globals';
+import useMCContext from '../../../src/hooks/mc-context';
 import { UserAutocomplete, SelectTransport } from '../../../src/components';
 
 const hasChatbot = (activeChatbots, transport) => activeChatbots.some(chatbot => chatbot.transport === transport);
@@ -12,7 +12,10 @@ const SendMessageForm = ({
   onChange = () => {},
   onSubmit = () => {}
 }) => {
-  const { activeChatbots } = useGlobals();
+  const { state: { activeChatbots } } = useMCContext();
+
+
+  console.log('----activeChatbots', activeChatbots)
 
   return (
     <div>
@@ -35,7 +38,9 @@ const SendMessageForm = ({
                       onChange({
                         ...formValue,
                         chatId: item.chatId,
+                        userId: user.userId,
                         recipient: user,
+                        transport: item.transport,
                         botNode: activeChatbots.find(chatbot => chatbot.transport === item.transport).nodeId
                       });
                     }
@@ -78,7 +83,7 @@ const SendMessageForm = ({
           <FormControl
             name="message"
             componentClass="textarea"
-            style={{ height: '100%' }}
+            style={{ height: '150px', resize: 'none' }}
             onKeyUp={event => {
               if (event.shiftKey && event.keyCode === 13) {
                 onSubmit();

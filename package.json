@@ -1,14 +1,14 @@
 {
-  "name": "red-bot-send-message",
-  "version": "1.0.6",
-  "description": "Send message directly to a user using the chatbot. A plugin for red-bot .io",
+  "name": "redbot-mass-contact",
+  "version": "0.1.0",
+  "description": "Send a message to all users",
   "main": "index.js",
   "author": {
     "name": "Guido Bellomo",
     "email": "guido.bellomo@gmail.com",
     "url": "https://github.com/guidone"
   },
-  "homepage": "https://github.com/guidone/red-bot-send-message",
+  "homepage": "https://github.com/guidone/red-bot-send-all",
   "license": "ISC",
   "repository": "",
   "dependencies": {

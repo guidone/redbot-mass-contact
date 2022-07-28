@@ -1,83 +1,15 @@
 import React from 'react';
-import { FormControl, Form, FormGroup, ControlLabel, FlexboxGrid, HelpBlock } from 'rsuite';
-
-import useMCContext from '../../../src/hooks/mc-context';
-import { UserAutocomplete, SelectTransport } from '../../../src/components';
-
-const hasChatbot = (activeChatbots, transport) => activeChatbots.some(chatbot => chatbot.transport === transport);
+import PropTypes from 'prop-types';
+import { FormControl, Form, FormGroup, ControlLabel } from 'rsuite';
 
 const SendMessageForm = ({
   value: formValue,
-  validation,
   onChange = () => {},
   onSubmit = () => {}
 }) => {
-  const { state: { activeChatbots } } = useMCContext();
-
-
-  console.log('----activeChatbots', activeChatbots)
-
   return (
     <div>
-      <Form fluid formValue={formValue} onChange={onChange} formError={validation}>
-        <FlexboxGrid justify="space-between">
-          <FlexboxGrid.Item colspan={15}>
-            <FormGroup>
-              <ControlLabel>Recipient</ControlLabel>
-              <FormControl
-                name="recipient"
-                accepter={UserAutocomplete}
-                cleanable={true}
-                onChange={user => {
-                  if (user != null && _.isArray(user.chatIds) && !_.isEmpty(user.chatIds)) {
-                    // select the first chatId with an available active chatbot
-                    const item = user.chatIds.find(chat => {
-                      return hasChatbot(activeChatbots, chat.transport);
-                    });
-                    if (item != null) {
-                      onChange({
-                        ...formValue,
-                        chatId: item.chatId,
-                        userId: user.userId,
-                        recipient: user,
-                        transport: item.transport,
-                        botNode: activeChatbots.find(chatbot => chatbot.transport === item.transport).nodeId
-                      });
-                    }
-                  }
-                }}
-              />
-            </FormGroup>
-          </FlexboxGrid.Item>
-          <FlexboxGrid.Item colspan={8}>
-          <FormGroup>
-              <ControlLabel>
-                Transport
-                <HelpBlock tooltip>Shows only platforms for which the selected users has a valid <em>chatId</em></HelpBlock>
-              </ControlLabel>
-              <FormControl
-                name="botNode"
-                accepter={SelectTransport}
-                transports={formValue.recipient != null ?
-                  formValue.recipient.chatIds.map(item => item.transport)
-                  : null
-                }
-                disabled={formValue.recipient == null}
-                onChange={nodeId => {
-                  // find the right
-                  const activeChatBot = activeChatbots.find(item => item.nodeId === nodeId);
-                  if (activeChatBot != null && formValue.recipient != null) {
-                    const row = formValue.recipient.chatIds.find(item => item.transport === activeChatBot.transport);
-                    if (row != null) {
-                      onChange({ ...formValue, chatId: row.chatId, botNode: nodeId });
-                    }
-                  }
-                }}
-                block
-              />
-            </FormGroup>
-          </FlexboxGrid.Item>
-        </FlexboxGrid>
+      <Form fluid formValue={formValue} onChange={onChange}>
         <FormGroup style={{ marginTop: '15px' }}>
           <ControlLabel>Message to send</ControlLabel>
           <FormControl
@@ -94,6 +26,13 @@ const SendMessageForm = ({
       </Form>
     </div>
   );
+};
+SendMessageForm.propTypes = {
+  value: PropTypes.shape({
+    message: PropTypes.string
+  }),
+  onChange: PropTypes.func,
+  onSubmit: PropTypes.func
 };
 
 export default SendMessageForm;

@@ -1,99 +1,397 @@
 [
   {
-      "id": "64c51dc3.e7bc74",
+      "id": "dd7648ce6d7fe96f",
       "type": "subflow",
-      "name": "Contact user",
-      "info": "Send a direct message to a chatbot user from **Mission Control**.\n\nConnect the output to the supported sender nodes (`Telegram Sender`, `Facebook Sender`, etc)\n\nThis option is available:\n\n* a widget in the dashboard\n* in the user modal in the [users list](/mc/users)\n* in the user records page (if plugins are installed, like [surveys](/mc/surveys), [transactions](/mc/transactions), etc)\n* \n\nVersion: _1.0.4_\n\nUrl: [GitHub](https://github.com/guidone/red-bot-send-message)",
+      "name": "Mass Contact",
+      "info": "This Flow sends a text message to all users of the chatbot using [Mission Control](/mc).\n\nNeeds to be connected to one or more sender nodes (`Telegram Sender`, `Facebook Sender`, etc).\n\nIn case the bot supports multiple platforms connect all senders node to the output pin, \nthe message will be sent using the first available platform for each user or - if available - \nthe platform specified as default in the `Mass Contact` configuration.\n",
       "category": "RedBot Flows",
       "in": [],
       "out": [
           {
-              "x": 1080,
-              "y": 120,
+              "x": 1680,
+              "y": 400,
               "wires": [
                   {
-                      "id": "11bdc38.d0cd63d",
+                      "id": "72bbcb37693649ea",
                       "port": 0
                   }
               ]
           }
       ],
-      "env": [],
+      "env": [
+          {
+              "name": "defaultTransport",
+              "type": "str",
+              "value": "",
+              "ui": {
+                  "label": {
+                      "en-US": "Default transport"
+                  },
+                  "type": "select",
+                  "opts": {
+                      "opts": [
+                          {
+                              "l": {
+                                  "en-US": "None"
+                              },
+                              "v": ""
+                          },
+                          {
+                              "l": {
+                                  "en-US": "Facebook Messenger"
+                              },
+                              "v": "messenger"
+                          },
+                          {
+                              "l": {
+                                  "en-US": "MS Teams"
+                              },
+                              "v": "teams"
+                          },
+                          {
+                              "l": {
+                                  "en-US": "Slack"
+                              },
+                              "v": "slack"
+                          },
+                          {
+                              "l": {
+                                  "en-US": "Telegram"
+                              },
+                              "v": "telegram"
+                          },
+                          {
+                              "l": {
+                                  "en-US": "Twilio"
+                              },
+                              "v": "twilio"
+                          },
+                          {
+                              "l": {
+                                  "en-US": "Viber"
+                              },
+                              "v": "viber"
+                          }
+                      ]
+                  }
+              }
+          }
+      ],
+      "meta": {
+          "module": "RedbotSendToAll",
+          "type": "redbot-send-all",
+          "author": "Guido Bellomo <guido.bellomo@gmail.com>",
+          "desc": "Send message to all users of the bot",
+          "keywords": "send,users,mass send"
+      },
       "color": "#ff6633",
       "outputLabels": [
-          "To Senders"
+          "To Sender Node"
       ],
-      "icon": "node-red-contrib-chatbot/chatbot-message.png"
+      "icon": "font-awesome/fa-users"
   },
   {
-      "id": "b3b9183d.b6d918",
-      "type": "mc-input",
-      "z": "64c51dc3.e7bc74",
+      "id": "70156d2cf35f7cb3",
+      "type": "mc-graphql",
+      "z": "dd7648ce6d7fe96f",
       "name": "",
-      "topic": "message.send",
-      "x": 190,
-      "y": 120,
+      "query": "query($chatbotId: String) {\n    counters: counters {\n    users {\n          count(chatbotId: $chatbotId)\n        }\n    }\n}",
+      "debug": false,
+      "noerr": 0,
+      "x": 820,
+      "y": 220,
       "wires": [
           [
-              "25c2d074.4e58b"
+              "6c7b38e7a8e18b1f"
+          ],
+          [
+              "56f6ca21b7a5982d"
+          ],
+          [
+              "56f6ca21b7a5982d"
           ]
       ]
   },
   {
-      "id": "11bdc38.d0cd63d",
-      "type": "chatbot-message",
-      "z": "64c51dc3.e7bc74",
-      "name": "From payload",
-      "message": [],
-      "x": 920,
+      "id": "e1bca0d7b36216ab",
+      "type": "function",
+      "z": "dd7648ce6d7fe96f",
+      "name": "Pick chunk",
+      "func": "\nconst chunks = global.get('redbot-sendout-chunks');\n// exit if empty\nif (!Array.isArray(chunks) || chunks.length === 0) {\n    return;\n}\n// pick and store \nconst [next, ...rest] = chunks;\nglobal.set('redbot-sendout-chunks', rest);\n\nreturn {\n    ...msg, \n    payload: {\n        //transport: next.transport,\n        //botNode: next.botNode,\n        chatbotId: next.chatbotId,\n        message: next.message,\n        total: next.total\n    },\n    variables: {\n        offset: next.offset,\n        limit: next.limit,\n        chatbotId: next.chatbotId\n    } \n};",
+      "outputs": 1,
+      "noerr": 0,
+      "initialize": "",
+      "finalize": "",
+      "libs": [],
+      "x": 650,
+      "y": 580,
+      "wires": [
+          [
+              "681768bf6aff304d"
+          ]
+      ]
+  },
+  {
+      "id": "cdad5cf222ce2059",
+      "type": "link in",
+      "z": "dd7648ce6d7fe96f",
+      "name": "Next chunk",
+      "links": [
+          "652b7fd511972041"
+      ],
+      "x": 475,
+      "y": 580,
+      "wires": [
+          [
+              "e1bca0d7b36216ab"
+          ]
+      ]
+  },
+  {
+      "id": "652b7fd511972041",
+      "type": "link out",
+      "z": "dd7648ce6d7fe96f",
+      "name": "link out 1",
+      "mode": "link",
+      "links": [
+          "cdad5cf222ce2059"
+      ],
+      "x": 1185,
+      "y": 560,
+      "wires": []
+  },
+  {
+      "id": "681768bf6aff304d",
+      "type": "mc-graphql",
+      "z": "dd7648ce6d7fe96f",
+      "name": "Get chunk",
+      "query": "query($offset: Int!, $limit: Int!, $chatbotId: String) {\n\tusers(offset: $offset, limit:$limit, chatbotId: $chatbotId) {\n    id,\n    userId,\n    username,\n    chatIds {\n      chatId,\n      transport\n    }\n  }\n}",
+      "debug": false,
+      "noerr": 0,
+      "x": 890,
+      "y": 560,
+      "wires": [
+          [
+              "652b7fd511972041",
+              "18bc97b658467fcf"
+          ],
+          [
+              "652b7fd511972041"
+          ],
+          [
+              "652b7fd511972041"
+          ]
+      ]
+  },
+  {
+      "id": "18bc97b658467fcf",
+      "type": "function",
+      "z": "dd7648ce6d7fe96f",
+      "name": "Payload for conversation",
+      "func": "const { payload, previous, variables } = msg;\n\nconst activeChatbots = flow.get('redbot-send-all-active-bots');\nconst defaultTransport = env.get('defaultTransport');\nconst chatbotId = previous.chatbotId;\n\n// get users with some chatIds\nconst users = payload\n    .users\n    .filter(user => user.chatIds.length !== 0);\n\n/**\n * getTransport\n * Get the transport for a user (considering the default transport or the first available one)\n */\nconst getTransport = user => {\n    const transports = user.chatIds.map(({ transport }) => transport);\n    if (defaultTransport != null && defaultTransport !== '' && transports.includes(defaultTransport)) {\n        return defaultTransport;\n    } else if (transports.length !== 0) {\n        return transports[0];\n    } else {\n        return null;\n    }\n};\n\n/**\n * getChatId\n * Get the chatId for a user given the transport\n */\nconst getChatId = (user, transport) => {\n    return user.chatIds.find(obj => obj.transport === transport)?.chatId;\n};\n\n/**\n * getBotNode\n * Given the transport and the chatbotId (from previous) then find the botNode to be used in\n * the conversation node\n */\nconst getBotNode = transport => {\n    return activeChatbots\n        .find(chatbot => chatbot.chatbotId === chatbotId && chatbot.transport === transport)\n        ?.botNode;\n};\n\nconst messagePayloads = users\n    .map(user => {\n        const transport = getTransport(user);\n        const chatId = getChatId(user, transport);\n        const botNode = getBotNode(transport);\n        if (transport && chatId && botNode) {\n            return {\n                message: previous.message,\n                botNode,\n                transport,\n                chatId \n            };\n        }\n    })\n    .filter(obj => obj != null);\n\nnode.send([\n    messagePayloads,\n    {\n        payload: {\n            total: previous.total,\n            current: Math.min(previous.total, variables.offset + variables.limit) \n        }\n    }\n]);",
+      "outputs": 2,
+      "noerr": 0,
+      "initialize": "",
+      "finalize": "",
+      "libs": [],
+      "x": 1110,
+      "y": 420,
+      "wires": [
+          [
+              "700ef054b44ba0d4",
+              "6bdd1ada8356fb41"
+          ],
+          [
+              "916489e95fc307b1"
+          ]
+      ]
+  },
+  {
+      "id": "477b057e51d627d3",
+      "type": "mc-input",
+      "z": "dd7648ce6d7fe96f",
+      "name": "",
+      "topic": "red-bot.sendAll",
+      "x": 130,
+      "y": 220,
+      "wires": [
+          [
+              "a63f238296aa26a8",
+              "e19c171d3d46be9b"
+          ]
+      ]
+  },
+  {
+      "id": "35175d4deb4640a2",
+      "type": "function",
+      "z": "dd7648ce6d7fe96f",
+      "name": "Set chatbotId",
+      "func": "\n\n\nreturn {\n    ...msg,\n    variables: {\n        chatbotId: msg.payload.chatbotId\n    }\n};",
+      "outputs": 1,
+      "noerr": 0,
+      "initialize": "",
+      "finalize": "",
+      "libs": [],
+      "x": 620,
+      "y": 220,
+      "wires": [
+          [
+              "70156d2cf35f7cb3"
+          ]
+      ]
+  },
+  {
+      "id": "a63f238296aa26a8",
+      "type": "function",
+      "z": "dd7648ce6d7fe96f",
+      "name": "Parse payload",
+      "func": "const { message, chatbotId, activeChatbots } = msg.payload || {};\n\n\n\nflow.set('redbot-send-all-active-bots', activeChatbots);\n\nreturn {\n    ...msg,\n    payload: { \n        //\"transport\": \"telegram\", \n        message, \n        //\"botNode\": \"8519c1c6fa4317cc\", \n        chatbotId \n        }\n};",
+      "outputs": 1,
+      "noerr": 0,
+      "initialize": "",
+      "finalize": "",
+      "libs": [],
+      "x": 380,
+      "y": 220,
+      "wires": [
+          [
+              "35175d4deb4640a2"
+          ]
+      ]
+  },
+  {
+      "id": "6c7b38e7a8e18b1f",
+      "type": "function",
+      "z": "dd7648ce6d7fe96f",
+      "name": "Create chunks",
+      "func": "const { payload, previous } = msg;\n\nconst usersCount = payload?.counters?.users?.count;\n\nconst chunks = [];\nconst chunkSize = 3;\nconst chunksCount = Math.floor(usersCount / chunkSize) + ((usersCount % chunkSize) ? 1 : 0);\n\nfor (let idx = 1; idx <= chunksCount; idx++) {\n    chunks.push({\n        //transport: previous.transport,\n        message: previous.message,\n        //botNode: previous.botNode,\n        chatbotId: previous.chatbotId,\n        offset: (idx - 1) * chunkSize,\n        limit: chunkSize,\n        total: usersCount\n    }); \n}\n\nglobal.set('redbot-sendout-chunks', chunks);\n\nif (chunks.length !== 0) {\n    node.send([\n        msg,\n        {\n            ...msg,\n            payload: {\n                current: 0,\n                total: chunks.length\n            }\n        },\n        null\n    ]);\n} else {\n    node.send([null, null, msg]);\n}\n\n",
+      "outputs": 3,
+      "noerr": 0,
+      "initialize": "",
+      "finalize": "",
+      "libs": [],
+      "x": 1000,
+      "y": 120,
+      "wires": [
+          [
+              "e1bca0d7b36216ab"
+          ],
+          [
+              "916489e95fc307b1"
+          ],
+          [
+              "56f6ca21b7a5982d"
+          ]
+      ]
+  },
+  {
+      "id": "916489e95fc307b1",
+      "type": "mc-output",
+      "z": "dd7648ce6d7fe96f",
+      "name": "",
+      "topic": "red-bot.sendAll.status",
+      "payload": "",
+      "x": 1520,
       "y": 120,
       "wires": [
           []
       ]
   },
   {
-      "id": "d1d71469.e9df28",
-      "type": "comment",
-      "z": "64c51dc3.e7bc74",
-      "name": "Trigger the start of conversation from control panel",
-      "info": "",
-      "x": 270,
-      "y": 60,
-      "wires": []
-  },
-  {
-      "id": "25c2d074.4e58b",
+      "id": "56f6ca21b7a5982d",
       "type": "function",
-      "z": "64c51dc3.e7bc74",
-      "name": "Payload for conversation",
-      "func": "const instantMessage = msg.payload;\n\nmsg.chatId = instantMessage.chatId;\nmsg.payload = instantMessage.message;\nmsg.botNode = instantMessage.botNode;\n\nreturn msg;",
+      "z": "dd7648ce6d7fe96f",
+      "name": "Error",
+      "func": "const { payload, previous } = msg;\n\nreturn {\n    ...msg,\n    payload: `Error fetching users or no users for chatbot: ${previous.chatbotId}`\n};",
       "outputs": 1,
       "noerr": 0,
-      "x": 490,
-      "y": 120,
+      "initialize": "",
+      "finalize": "",
+      "libs": [],
+      "x": 1210,
+      "y": 180,
       "wires": [
           [
-              "4dc66a6.082aa94"
+              "d98f05dafba2e015"
           ]
       ]
   },
   {
-      "id": "4dc66a6.082aa94",
+      "id": "d98f05dafba2e015",
+      "type": "mc-output",
+      "z": "dd7648ce6d7fe96f",
+      "name": "",
+      "topic": "red-bot.sendAll.error",
+      "payload": "",
+      "x": 1520,
+      "y": 200,
+      "wires": [
+          []
+      ]
+  },
+  {
+      "id": "700ef054b44ba0d4",
       "type": "chatbot-conversation",
-      "z": "64c51dc3.e7bc74",
+      "z": "dd7648ce6d7fe96f",
       "name": "",
       "botDevelopment": "",
       "botProduction": "",
       "chatId": "",
       "userId": "",
       "transport": "",
-      "store": "",
-      "x": 730,
-      "y": 120,
+      "x": 1350,
+      "y": 400,
       "wires": [
           [
-              "11bdc38.d0cd63d"
+              "72bbcb37693649ea"
           ]
       ]
+  },
+  {
+      "id": "72bbcb37693649ea",
+      "type": "chatbot-message",
+      "z": "dd7648ce6d7fe96f",
+      "name": "",
+      "message": [],
+      "language": "none",
+      "x": 1510,
+      "y": 400,
+      "wires": [
+          []
+      ]
+  },
+  {
+      "id": "e19c171d3d46be9b",
+      "type": "debug",
+      "z": "dd7648ce6d7fe96f",
+      "name": "debug 3",
+      "active": true,
+      "tosidebar": true,
+      "console": false,
+      "tostatus": false,
+      "complete": "payload",
+      "targetType": "msg",
+      "statusVal": "",
+      "statusType": "auto",
+      "x": 350,
+      "y": 340,
+      "wires": []
+  },
+  {
+      "id": "6bdd1ada8356fb41",
+      "type": "debug",
+      "z": "dd7648ce6d7fe96f",
+      "name": "debug 4",
+      "active": true,
+      "tosidebar": true,
+      "console": false,
+      "tostatus": false,
+      "complete": "true",
+      "targetType": "full",
+      "statusVal": "",
+      "statusType": "auto",
+      "x": 1350,
+      "y": 520,
+      "wires": []
   }
 ]

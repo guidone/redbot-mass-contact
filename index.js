@@ -17,14 +17,8 @@ const { Line } = Progress;
 const SendMessageToAllWidget = () => {
   const { state } = useMCContext();
   const { chatbotId, activeChatbots } = state;
-
-  // get the default transport for the bot
-  const defaultChatbot = activeChatbots.filter(chatbot => chatbot.chatbotId === chatbotId)[0];
-
   const [formValue, setFormValue] = useState({
-    message: '',
-    botNode: defaultChatbot?.botNode,
-    transport: defaultChatbot?.transport
+    message: ''
   });
   const [total, setTotal] = useState(null);
   const [error, setError] = useState(null);

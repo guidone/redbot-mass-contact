@@ -8,8 +8,8 @@
       "in": [],
       "out": [
           {
-              "x": 1680,
-              "y": 400,
+              "x": 2240,
+              "y": 360,
               "wires": [
                   {
                       "id": "72bbcb37693649ea",
@@ -78,17 +78,29 @@
           }
       ],
       "meta": {
-          "module": "RedbotSendToAll",
+          "module": "RedbotMassContact",
           "type": "redbot-send-all",
+          "version": "1.2.1",
           "author": "Guido Bellomo <guido.bellomo@gmail.com>",
           "desc": "Send message to all users of the bot",
-          "keywords": "send,users,mass send"
+          "keywords": "send,users,mass send",
+          "license": "MIT"
       },
       "color": "#ff6633",
       "outputLabels": [
           "To Sender Node"
       ],
-      "icon": "font-awesome/fa-users"
+      "icon": "font-awesome/fa-users",
+      "status": {
+          "x": 1860,
+          "y": 420,
+          "wires": [
+              {
+                  "id": "18bc97b658467fcf",
+                  "port": 2
+              }
+          ]
+      }
   },
   {
       "id": "70156d2cf35f7cb3",
@@ -117,7 +129,7 @@
       "type": "function",
       "z": "dd7648ce6d7fe96f",
       "name": "Pick chunk",
-      "func": "\nconst chunks = global.get('redbot-sendout-chunks');\n// exit if empty\nif (!Array.isArray(chunks) || chunks.length === 0) {\n    return;\n}\n// pick and store \nconst [next, ...rest] = chunks;\nglobal.set('redbot-sendout-chunks', rest);\n\nreturn {\n    ...msg, \n    payload: {\n        //transport: next.transport,\n        //botNode: next.botNode,\n        chatbotId: next.chatbotId,\n        message: next.message,\n        total: next.total\n    },\n    variables: {\n        offset: next.offset,\n        limit: next.limit,\n        chatbotId: next.chatbotId\n    } \n};",
+      "func": "\nconst chunks = flow.get('redbotSendoutChunks');\n// exit if empty\nif (!Array.isArray(chunks) || chunks.length === 0) {\n    return;\n}\n// pick and store \nconst [next, ...rest] = chunks;\nflow.set('redbotSendoutChunks', rest);\n\nreturn {\n    ...msg, \n    payload: {\n        //transport: next.transport,\n        //botNode: next.botNode,\n        chatbotId: next.chatbotId,\n        message: next.message,\n        total: next.total\n    },\n    variables: {\n        offset: next.offset,\n        limit: next.limit,\n        chatbotId: next.chatbotId\n    } \n};",
       "outputs": 1,
       "noerr": 0,
       "initialize": "",
@@ -173,7 +185,7 @@
       "wires": [
           [
               "652b7fd511972041",
-              "18bc97b658467fcf"
+              "67ed173f1a48ca55"
           ],
           [
               "652b7fd511972041"
@@ -188,22 +200,22 @@
       "type": "function",
       "z": "dd7648ce6d7fe96f",
       "name": "Payload for conversation",
-      "func": "const { payload, previous, variables } = msg;\n\nconst activeChatbots = flow.get('redbot-send-all-active-bots');\nconst defaultTransport = env.get('defaultTransport');\nconst chatbotId = previous.chatbotId;\n\n// get users with some chatIds\nconst users = payload\n    .users\n    .filter(user => user.chatIds.length !== 0);\n\n/**\n * getTransport\n * Get the transport for a user (considering the default transport or the first available one)\n */\nconst getTransport = user => {\n    const transports = user.chatIds.map(({ transport }) => transport);\n    if (defaultTransport != null && defaultTransport !== '' && transports.includes(defaultTransport)) {\n        return defaultTransport;\n    } else if (transports.length !== 0) {\n        return transports[0];\n    } else {\n        return null;\n    }\n};\n\n/**\n * getChatId\n * Get the chatId for a user given the transport\n */\nconst getChatId = (user, transport) => {\n    return user.chatIds.find(obj => obj.transport === transport)?.chatId;\n};\n\n/**\n * getBotNode\n * Given the transport and the chatbotId (from previous) then find the botNode to be used in\n * the conversation node\n */\nconst getBotNode = transport => {\n    return activeChatbots\n        .find(chatbot => chatbot.chatbotId === chatbotId && chatbot.transport === transport)\n        ?.botNode;\n};\n\nconst messagePayloads = users\n    .map(user => {\n        const transport = getTransport(user);\n        const chatId = getChatId(user, transport);\n        const botNode = getBotNode(transport);\n        if (transport && chatId && botNode) {\n            return {\n                message: previous.message,\n                botNode,\n                transport,\n                chatId \n            };\n        }\n    })\n    .filter(obj => obj != null);\n\nnode.send([\n    messagePayloads,\n    {\n        payload: {\n            total: previous.total,\n            current: Math.min(previous.total, variables.offset + variables.limit) \n        }\n    }\n]);",
-      "outputs": 2,
+      "func": "const { payload } = msg;\n\nconst activeChatbots = flow.get('redbotSendAllActiveBots');\nconst chatbotId = flow.get('redbotSendAllChatbotId');\nconst tps = flow.get('redbotSendAllTps');\nconst msgPerSecond = flow.get('redbotSendAllMsgPerSecond');\nconst defaultTransport = env.get('defaultTransport');\n\nconst user = msg.payload.user;\n\n/**\n * getTransport\n * Get the transport for a user (considering the default transport or the first available one)\n */\nconst getTransport = user => {\n    const transports = user.chatIds.map(({ transport }) => transport);\n    if (defaultTransport != null && defaultTransport !== '' && transports.includes(defaultTransport)) {\n        return defaultTransport;\n    } else if (transports.length !== 0) {\n        return transports[0];\n    } else {\n        return null;\n    }\n};\n\n/**\n * getChatId\n * Get the chatId for a user given the transport\n */\nconst getChatId = (user, transport) => {\n    return user.chatIds.find(obj => obj.transport === transport)?.chatId;\n};\n\n/**\n * getBotNode\n * Given the transport and the chatbotId (from previous) then find the botNode to be used in\n * the conversation node\n */\nconst getBotNode = transport => {\n    return activeChatbots\n        .find(chatbot => chatbot.chatbotId === chatbotId && chatbot.transport === transport)\n        ?.botNode;\n};\n\nconst transport = getTransport(user);\nconst chatId = getChatId(user, transport);\nconst botNode = getBotNode(transport);\n\nif (transport && chatId && botNode) {\n    node.send([\n        {\n            message: msg.payload.message,\n            botNode,\n            transport,\n            chatId\n        },\n        {\n            payload: {\n                total: msg.payload.total,\n                current: msg.payload.current\n            }\n        },\n        {\n            payload: `Messages sent: ${msg.payload.current} / ${msg.payload.total} (${msgPerSecond} msg/s)`\n        }\n    ]);\n} else {\n    let message = 'unknown error';\n    if (!transport) {\n        message = 'a valid transport was not found for this user';\n    } else if (!chatId) {\n        message = 'a valid chatId was not found for this user';\n    } else if (!botNode) {\n        message = `the chatbot with id: ${chatbotId} was not found`;\n    }\n    node.warn(`Unable to send message to userId ${user.userId}: ${message}`);\n    node.send([\n        null,\n        {\n            payload: {\n                total: msg.payload.total,\n                current: msg.payload.current\n            }\n        }\n    ]);\n}",
+      "outputs": 3,
       "noerr": 0,
       "initialize": "",
       "finalize": "",
       "libs": [],
-      "x": 1110,
-      "y": 420,
+      "x": 1630,
+      "y": 360,
       "wires": [
           [
-              "700ef054b44ba0d4",
-              "6bdd1ada8356fb41"
+              "700ef054b44ba0d4"
           ],
           [
               "916489e95fc307b1"
-          ]
+          ],
+          []
       ]
   },
   {
@@ -216,8 +228,7 @@
       "y": 220,
       "wires": [
           [
-              "a63f238296aa26a8",
-              "e19c171d3d46be9b"
+              "a63f238296aa26a8"
           ]
       ]
   },
@@ -245,8 +256,8 @@
       "type": "function",
       "z": "dd7648ce6d7fe96f",
       "name": "Parse payload",
-      "func": "const { message, chatbotId, activeChatbots } = msg.payload || {};\n\n\n\nflow.set('redbot-send-all-active-bots', activeChatbots);\n\nreturn {\n    ...msg,\n    payload: { \n        //\"transport\": \"telegram\", \n        message, \n        //\"botNode\": \"8519c1c6fa4317cc\", \n        chatbotId \n        }\n};",
-      "outputs": 1,
+      "func": "const { message, chatbotId, activeChatbots, tps } = msg.payload || {};\n\nflow.set('redbotSendAllChatbotId', chatbotId);\nflow.set('redbotSendAllMsgPerSecond', tps);\nflow.set('redbotSendAllTps', Math.floor(1000 / tps));\n\n// only bots with the right id\nconst bots = activeChatbots.filter(bot => bot.chatbotId === chatbotId);\n\nif (bots.length === 0) {\n    const error = `There aren\\'t any active chatbots in the flow for the chatbotId \"${chatbotId}\". Aborting.`;\n    node.error(error);\n    node.send([null, { payload: error } ]);\n} else {\n    flow.set('redbotSendAllActiveBots', activeChatbots);\n    node.send([\n        {\n            ...msg,\n            payload: {\n                message,\n                chatbotId\n            }\n        },\n        null\n    ]);\n}\n\n\n",
+      "outputs": 2,
       "noerr": 0,
       "initialize": "",
       "finalize": "",
@@ -256,6 +267,9 @@
       "wires": [
           [
               "35175d4deb4640a2"
+          ],
+          [
+              "a402bfbf60cee5c1"
           ]
       ]
   },
@@ -264,7 +278,7 @@
       "type": "function",
       "z": "dd7648ce6d7fe96f",
       "name": "Create chunks",
-      "func": "const { payload, previous } = msg;\n\nconst usersCount = payload?.counters?.users?.count;\n\nconst chunks = [];\nconst chunkSize = 3;\nconst chunksCount = Math.floor(usersCount / chunkSize) + ((usersCount % chunkSize) ? 1 : 0);\n\nfor (let idx = 1; idx <= chunksCount; idx++) {\n    chunks.push({\n        //transport: previous.transport,\n        message: previous.message,\n        //botNode: previous.botNode,\n        chatbotId: previous.chatbotId,\n        offset: (idx - 1) * chunkSize,\n        limit: chunkSize,\n        total: usersCount\n    }); \n}\n\nglobal.set('redbot-sendout-chunks', chunks);\n\nif (chunks.length !== 0) {\n    node.send([\n        msg,\n        {\n            ...msg,\n            payload: {\n                current: 0,\n                total: chunks.length\n            }\n        },\n        null\n    ]);\n} else {\n    node.send([null, null, msg]);\n}\n\n",
+      "func": "const { payload, previous } = msg;\n\nconst usersCount = payload?.counters?.users?.count;\n\nconst chunks = [];\nconst chunkSize = 10;\nconst chunksCount = Math.floor(usersCount / chunkSize) + ((usersCount % chunkSize) ? 1 : 0);\n\nfor (let idx = 1; idx <= chunksCount; idx++) {\n    chunks.push({\n        //transport: previous.transport,\n        message: previous.message,\n        //botNode: previous.botNode,\n        chatbotId: previous.chatbotId,\n        offset: (idx - 1) * chunkSize,\n        limit: chunkSize,\n        total: usersCount\n    }); \n}\n\nflow.set('redbotSendoutChunks', chunks);\n\nif (chunks.length !== 0) {\n    node.send([\n        msg,\n        {\n            ...msg,\n            payload: {\n                current: 0,\n                //total: chunks.length\n                total: usersCount\n            }\n        },\n        null\n    ]);\n} else {\n    node.send([null, null, msg]);\n}\n\n",
       "outputs": 3,
       "noerr": 0,
       "initialize": "",
@@ -291,7 +305,7 @@
       "name": "",
       "topic": "red-bot.sendAll.status",
       "payload": "",
-      "x": 1520,
+      "x": 1880,
       "y": 120,
       "wires": [
           []
@@ -312,7 +326,7 @@
       "y": 180,
       "wires": [
           [
-              "d98f05dafba2e015"
+              "505b7c4144bb55d7"
           ]
       ]
   },
@@ -323,8 +337,8 @@
       "name": "",
       "topic": "red-bot.sendAll.error",
       "payload": "",
-      "x": 1520,
-      "y": 200,
+      "x": 1920,
+      "y": 520,
       "wires": [
           []
       ]
@@ -339,8 +353,8 @@
       "chatId": "",
       "userId": "",
       "transport": "",
-      "x": 1350,
-      "y": 400,
+      "x": 1870,
+      "y": 360,
       "wires": [
           [
               "72bbcb37693649ea"
@@ -354,44 +368,119 @@
       "name": "",
       "message": [],
       "language": "none",
-      "x": 1510,
-      "y": 400,
+      "x": 2030,
+      "y": 360,
       "wires": [
           []
       ]
   },
   {
-      "id": "e19c171d3d46be9b",
-      "type": "debug",
+      "id": "ece9e69c35f97f06",
+      "type": "mc-queue",
       "z": "dd7648ce6d7fe96f",
-      "name": "debug 3",
-      "active": true,
-      "tosidebar": true,
-      "console": false,
-      "tostatus": false,
-      "complete": "payload",
-      "targetType": "msg",
-      "statusVal": "",
-      "statusType": "auto",
-      "x": 350,
-      "y": 340,
+      "name": "recipients",
+      "mode": "sequential",
+      "initialState": "running",
+      "delay": "{{flow.redbotSendAllTps}}",
+      "x": 1360,
+      "y": 360,
+      "wires": [
+          [
+              "18bc97b658467fcf"
+          ]
+      ]
+  },
+  {
+      "id": "67ed173f1a48ca55",
+      "type": "function",
+      "z": "dd7648ce6d7fe96f",
+      "name": "Users in payload",
+      "func": "const { payload, previous, variables } = msg;\n\nreturn {\n    payload: msg.payload.users.map((user, idx) => ({ \n        user: {\n            ...user,\n            id: undefined\n        },\n        total: previous.total,\n        message: previous.message,\n        current: variables.offset + idx + 1        \n    }))\n};",
+      "outputs": 1,
+      "noerr": 0,
+      "initialize": "",
+      "finalize": "",
+      "libs": [],
+      "x": 1130,
+      "y": 360,
+      "wires": [
+          [
+              "ece9e69c35f97f06"
+          ]
+      ]
+  },
+  {
+      "id": "9462006c1c0453ac",
+      "type": "link in",
+      "z": "dd7648ce6d7fe96f",
+      "name": "Error",
+      "links": [
+          "505b7c4144bb55d7",
+          "a402bfbf60cee5c1"
+      ],
+      "x": 1705,
+      "y": 520,
+      "wires": [
+          [
+              "d98f05dafba2e015"
+          ]
+      ]
+  },
+  {
+      "id": "505b7c4144bb55d7",
+      "type": "link out",
+      "z": "dd7648ce6d7fe96f",
+      "name": "link out 2",
+      "mode": "link",
+      "links": [
+          "9462006c1c0453ac"
+      ],
+      "x": 1305,
+      "y": 180,
       "wires": []
   },
   {
-      "id": "6bdd1ada8356fb41",
-      "type": "debug",
+      "id": "a402bfbf60cee5c1",
+      "type": "link out",
       "z": "dd7648ce6d7fe96f",
-      "name": "debug 4",
-      "active": true,
-      "tosidebar": true,
-      "console": false,
-      "tostatus": false,
-      "complete": "true",
-      "targetType": "full",
-      "statusVal": "",
-      "statusType": "auto",
-      "x": 1350,
-      "y": 520,
+      "name": "link out 3",
+      "mode": "link",
+      "links": [
+          "9462006c1c0453ac"
+      ],
+      "x": 555,
+      "y": 260,
       "wires": []
+  },
+  {
+      "id": "709131338f2670f1",
+      "type": "mc-input",
+      "z": "dd7648ce6d7fe96f",
+      "name": "",
+      "topic": "red-bot.sendAll.setTPS",
+      "x": 160,
+      "y": 380,
+      "wires": [
+          [
+              "547af7e5af572f90"
+          ]
+      ]
+  },
+  {
+      "id": "547af7e5af572f90",
+      "type": "function",
+      "z": "dd7648ce6d7fe96f",
+      "name": "Set tps",
+      "func": "const { tps } = msg.payload || {};\n\n\nflow.set('redbotSendAllTps', Math.floor(1000 / tps));\n\n\nflow.set('redbotSendAllMsgPerSecond', tps);\nflow.set('redbotSendAllTps', Math.floor(1000 / tps));\n\n",
+      "outputs": 1,
+      "noerr": 0,
+      "initialize": "",
+      "finalize": "",
+      "libs": [],
+      "x": 400,
+      "y": 380,
+      "wires": [
+          []
+      ]
   }
 ]

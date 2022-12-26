@@ -1,6 +1,6 @@
 {
   "name": "redbot-mass-contact",
-  "version": "0.1.0",
+  "version": "1.2.1",
   "description": "Send a message to all users",
   "main": "index.js",
   "author": {
@@ -9,7 +9,7 @@
     "url": "https://github.com/guidone"
   },
   "homepage": "https://github.com/guidone/red-bot-send-all",
-  "license": "ISC",
+  "license": "MIT",
   "repository": "",
   "dependencies": {
   },
